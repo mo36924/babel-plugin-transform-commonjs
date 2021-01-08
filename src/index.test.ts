@@ -1,5 +1,5 @@
-import { describe, test, expect } from "@jest/globals";
 import { transformSync } from "@babel/core";
+import { describe, test, expect } from "@jest/globals";
 import plugin from "./index";
 
 const transform = (code: string) =>
@@ -17,6 +17,7 @@ describe("babel-plugin-transform-commonjs", () => {
       const react = require("react");
       module.exports = react;
     `);
+
     expect(code).toMatchInlineSnapshot(`
       import react from "react";
       export default react;
@@ -28,6 +29,7 @@ describe("babel-plugin-transform-commonjs", () => {
       const react = require("react");
       exports.react = react;
     `);
+
     expect(code).toMatchInlineSnapshot(`
       const exports = {};
       import react from "react";
@@ -46,6 +48,7 @@ describe("babel-plugin-transform-commonjs", () => {
         module.exports = require('./cjs/react.development.js');
       }
     `);
+
     expect(code).toMatchInlineSnapshot(`
       const module = {
         exports: {},

@@ -52,6 +52,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
                   ),
                 ]),
               );
+
               path.pushContainer(
                 "body",
                 t.exportDefaultDeclaration(t.memberExpression(t.identifier("module"), t.identifier("exports"))),
@@ -66,6 +67,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
                   ),
                 ]),
               );
+
               path.pushContainer(
                 "body",
                 t.exportDefaultDeclaration(t.memberExpression(t.identifier("module"), t.identifier("exports"))),
@@ -87,6 +89,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
                 references,
                 referencePaths: { 0: referencePath },
               } = scope.getBinding("module")!;
+
               if (
                 references === 1 &&
                 referencePath.parentPath.matchesPattern("module.exports") &&
@@ -111,6 +114,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
               "body",
               t.variableDeclaration("const", [t.variableDeclarator(t.identifier("exports"), t.objectExpression([]))]),
             );
+
             path.pushContainer("body", t.exportDefaultDeclaration(t.identifier("exports")));
           }
 
@@ -119,6 +123,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
           }
 
           const hasBoundName = names.some((name) => scope.hasGlobal(name) || scope.hasBinding(name));
+
           const moduleExports = hasModule
             ? t.memberExpression(t.identifier("module"), t.identifier("exports"))
             : t.identifier("exports");
@@ -199,6 +204,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
         }
 
         const statement = path.findParent((path) => path.parentPath.isProgram());
+
         if (!statement) {
           return;
         }
@@ -218,6 +224,7 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
         ) {
           const id = t.identifier(path.parentPath.node.id.name);
           statement.insertBefore(t.importDeclaration([t.importDefaultSpecifier(id)], t.stringLiteral(importPath)));
+
           if (path.parentPath.parentPath.node.declarations.length === 1) {
             path.parentPath.parentPath.remove();
           } else {
