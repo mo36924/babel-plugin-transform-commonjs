@@ -38,6 +38,10 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
           const names = namedExports[state.filename];
           const hasNamedExports = !!names;
 
+          let moduleExports = hasModule
+            ? t.memberExpression(t.identifier("module"), t.identifier("exports"))
+            : t.identifier("exports");
+
           if (hasModule) {
             if (hasExports) {
               path.unshiftContainer(
@@ -49,21 +53,6 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
                     t.objectExpression([
                       t.objectProperty(t.identifier("exports"), t.identifier("exports"), false, true),
                     ]),
-                  ),
-                ]),
-              );
-
-              path.pushContainer(
-                "body",
-                t.exportDefaultDeclaration(t.memberExpression(t.identifier("module"), t.identifier("exports"))),
-              );
-            } else if (hasNamedExports) {
-              path.unshiftContainer(
-                "body",
-                t.variableDeclaration("const", [
-                  t.variableDeclarator(
-                    t.identifier("module"),
-                    t.objectExpression([t.objectProperty(t.identifier("exports"), t.objectExpression([]))]),
                   ),
                 ]),
               );
@@ -97,11 +86,28 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
                 referencePath.parentPath.parentPath.parentPath.isExpressionStatement() &&
                 referencePath.parentPath.parentPath.parentPath.parentPath.isProgram()
               ) {
-                referencePath.parentPath.parentPath.parentPath.replaceWith(
-                  t.exportDefaultDeclaration(referencePath.parentPath.parentPath.node.right),
-                );
+                if (hasNamedExports) {
+                  const moduleExportsId = scope.generateUid("module.exports");
 
-                moduleExportsPath.remove();
+                  referencePath.parentPath.parentPath.parentPath.replaceWithMultiple([
+                    t.variableDeclaration("const", [
+                      t.variableDeclarator(
+                        t.identifier(moduleExportsId),
+                        referencePath.parentPath.parentPath.node.right,
+                      ),
+                    ]),
+                    t.exportDefaultDeclaration(t.identifier(moduleExportsId)),
+                  ]);
+
+                  moduleExportsPath.remove();
+                  moduleExports = t.identifier(moduleExportsId);
+                } else {
+                  referencePath.parentPath.parentPath.parentPath.replaceWith(
+                    t.exportDefaultDeclaration(referencePath.parentPath.parentPath.node.right),
+                  );
+
+                  moduleExportsPath.remove();
+                }
               } else {
                 path.pushContainer(
                   "body",
@@ -123,10 +129,6 @@ export default ({ types: t }: typeof babel, options: Options): PluginObj<State> 
           }
 
           const hasBoundName = names.some((name) => scope.hasGlobal(name) || scope.hasBinding(name));
-
-          const moduleExports = hasModule
-            ? t.memberExpression(t.identifier("module"), t.identifier("exports"))
-            : t.identifier("exports");
 
           if (hasBoundName) {
             const uids = names.map((name) => [
